@@ -1,59 +1,19 @@
-#pragma once
+name: Build ChanlunX x64 DLL
 
-#ifdef _WIN32
-    #ifdef CHANLUNX_EXPORTS
-        #define CHANLUNX_API __declspec(dllexport)
-    #else
-        #define CHANLUNX_API __declspec(dllimport)
-    #endif
-#else
-    #define CHANLUNX_API
-#endif
-cmake_minimum_required(VERSION 3.10)
-project(ChanlunX VERSION 1.0.0 LANGUAGES CXX)
+on:
+  workflow_dispatch:   # 手动触发
 
-# 设置 C++ 标准（通达信一般兼容较老标准，可按需调整）
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# 指定输出目录（可选）
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-# 收集源文件
-file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/*.c")
-file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
-
-# 创建动态库
-add_library(ChanlunX SHARED ${SRC_FILES} ${HEADER_FILES})
-
-# 包含头文件目录
-target_include_directories(ChanlunX PRIVATE include)
-target_include_directories(ChanlunX PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-# 定义导出宏（用于 Windows 上 __declspec(dllexport/dllimport)）
-target_compile_definitions(ChanlunX PRIVATE CHANLUNX_EXPORTS)
-
-# 如有需要，链接其他库（例如数学库、第三方库）
-# target_link_libraries(ChanlunX PRIVATE some_lib)
-
-# 设置 DLL 版本信息（可选）
-set_target_properties(ChanlunX PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}
-)
-
-# 针对 Windows 生成 .def 文件（如果不想用 __declspec，可选用）
-# 这里采用更常见的 __declspec 方式，见头文件定义。
-
-# 安装规则（可选）
-install(TARGETS ChanlunX
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-)
-install(FILES ${HEADER_FILES} DESTINATION include)
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure CMake
+        run: cmake -A x64 -B build
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChanlunX_x64
+          path: build/Release/ChanlunX.dll
